@@ -143,14 +143,15 @@ desired_midi_layout = [2, 1, 2, 3, 4, 5, 6]
 
 num_voices = 7
 my_path = './presets'
-voice_notes = []
 
 files = [f for f in listdir(my_path) if isfile(join(my_path, f))]
 
 for file in files:
     name, ext = splitext(file)
+
     if ext == '.SND':
-        in_file = open(join(my_path, file), "rb+")
+        voice_notes = []
+        in_file = open(join(my_path, file), "r+")
 
         size = getSize(in_file)
         preset_name = in_file.read(8)
