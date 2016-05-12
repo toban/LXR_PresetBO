@@ -138,48 +138,100 @@ def getSize(fileobject):
     fileobject.seek(0,0)
     return size
 
-# set this to the desired midilayout
-desired_midi_layout = [2, 1, 2, 3, 4, 5, 6]
+STEREO_1 = 0
+STEREO_2 = 1
+LEFT_1 = 2
+RIGHT_1 = 3
+LEFT_2 = 4
+RIGHT_2 = 5
 
-num_voices = 7
+# set this to the desired midilayout
+desired_midi_layout = [34, 37, 56, 38, 27, 41, 46]
+desired_output_setup = [LEFT_1, RIGHT_1, RIGHT_1, RIGHT_1, RIGHT_1, RIGHT_1]
+
+num_midi_channels = 7
+num_voices = 6
 my_path = './presets'
 
-files = [f for f in listdir(my_path) if isfile(join(my_path, f))]
+def bulk_output_setup():
 
-for file in files:
-    name, ext = splitext(file)
+    files = [f for f in listdir(my_path) if isfile(join(my_path, f))]
 
-    if ext == '.SND':
-        voice_notes = []
-        in_file = open(join(my_path, file), "r+")
+    for file in files:
+        name, ext = splitext(file)
 
-        size = getSize(in_file)
-        preset_name = in_file.read(8)
+        if ext == '.SND':
+            voice_outputs = []
+            in_file = open(join(my_path, file), "r+")
 
-        # offset is seven bytes from the end
-        in_file.seek(size-num_voices)
+            size = getSize(in_file)
+            preset_name = in_file.read(8)
 
-        # read the notes
-        for i in range(0, num_voices):
-            voice_note = in_file.read(1)
-            voice_notes.append(ord(voice_note))
+            # offset is seven + six bytes from the end
+            in_file.seek(size-(num_voices+num_midi_channels))
 
-        file_size_string = "%s bytes" % str(size)
-        status = "OK"
-
-        if(desired_midi_layout != voice_notes):
-            status = "UPDATED"
-
-            # put the pointer at the note-offset
-            in_file.seek(size-num_voices)
-
+            # read the outputs
             for i in range(0, num_voices):
-                desired_note = desired_midi_layout[i]
-                in_file.write(chr(desired_note))
+                voice_output = in_file.read(1)
+                voice_outputs.append(ord(voice_output))
 
-        print "%s - %s: %s" % (file,preset_name.rstrip(), status)
+            file_size_string = "%s bytes" % str(size)
+            status = "OK"
 
-        in_file.close()
+            if(desired_output_setup != voice_outputs):
+                status = "UPDATED"
+
+                # put the pointer at the note-offset
+                in_file.seek(size-(num_midi_channels+num_voices))
+
+                for i in range(0, num_voices):
+                    desired_output = desired_output_setup[i]
+                    in_file.write(chr(desired_output))
+
+            print "%s - %s: %s" % (file,preset_name.rstrip(), status)
+
+            in_file.close()
+
+def bulk_midi_mapping():
+
+    files = [f for f in listdir(my_path) if isfile(join(my_path, f))]
+
+    for file in files:
+        name, ext = splitext(file)
+
+        if ext == '.SND':
+            voice_notes = []
+            in_file = open(join(my_path, file), "r+")
+
+            size = getSize(in_file)
+            preset_name = in_file.read(8)
+
+            # offset is seven bytes from the end
+            in_file.seek(size-num_midi_channels)
+
+            # read the notes
+            for i in range(0, num_midi_channels):
+                voice_note = in_file.read(1)
+                voice_notes.append(ord(voice_note))
+
+            file_size_string = "%s bytes" % str(size)
+            status = "OK"
+
+            if(desired_midi_layout != voice_notes):
+                status = "UPDATED"
+
+                # put the pointer at the note-offset
+                in_file.seek(size-num_midi_channels)
+
+                for i in range(0, num_midi_channels):
+                    desired_note = desired_midi_layout[i]
+                    in_file.write(chr(desired_note))
+
+            print "%s - %s: %s" % (file,preset_name.rstrip(), status)
+
+            in_file.close()
+
+bulk_output_setup()
 
 
 
